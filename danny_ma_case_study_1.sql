@@ -165,5 +165,20 @@ where s.order_date < c.last_date
 group by 
 s.customer_id
 
+-- bonus question 1
+SELECT
+	s.customer_id,
+    s.order_date,
+    m.product_name,
+    m.price,
+    case
+    when mem.join_date is null then 'N'
+    when mem.join_date>s.order_date then 'N'
+    else 'Y'
+    end as member
 
+FROM dannys_diner.sales as s
+join dannys_diner.menu as m on s.product_id = m.product_id
+join dannys_diner.members as mem on s.customer_id = mem.customer_id
+;
 
