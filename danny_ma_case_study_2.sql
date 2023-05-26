@@ -76,3 +76,52 @@ with cte as(
 select order_id, runner_id, cast(pickup_time as timestamp), cast(distance as numeric),cast(duration as numeric) from cte
 )
 select max(duration)-min(duration) as difference from cte2
+
+
+
+C
+--Question 1 Query
+with cte as (select distinct c.pizza_id,p.pizza_name, r.toppings from 
+pizza_runner.customer_orders as c
+join pizza_runner.pizza_names as p on c.pizza_id = p.pizza_id
+join pizza_runner.pizza_recipes as r on c.pizza_id = r.pizza_id),
+cte2 as (select
+pizza_name, 
+cast(unnest(string_to_array(toppings, ',')) as integer) as topping_id
+from cte),
+cte3 as (
+  select c.pizza_name, p.topping_name
+  from cte2 as c
+  join pizza_runner.pizza_toppings as p 
+  on c.topping_id = p.topping_id)
+select pizza_name, string_agg(topping_name,',') from cte3 group by pizza_name;
+
+
+
+--Question 2 query
+with cte as (
+  select
+  case when extras = '' or extras = 'null' then null
+  else extras
+  end as extras
+from pizza_runner.customer_orders),
+  cte2 as (
+    select unnest((string_to_array(extras,','))) as extras from cte),
+    cte3 as (select extras, count(extras) as count from cte2 group by extras),
+    cte4 as (select cast(extras as integer) from cte3 order by count desc limit 1)
+    select topping_name from pizza_runner.pizza_toppings as p
+    join cte4 as c on p.topping_id = c.extras;
+    
+    --Question 3 query
+    with cte as (
+  select
+  case when exclusions = 'null' then null
+  else exclusions
+  end as exclusions
+from pizza_runner.customer_orders),
+  cte2 as (
+    select unnest((string_to_array(exclusions,','))) as exclusions from cte),
+    cte3 as (select exclusions, count(exclusions) as count from cte2 group by exclusions),
+    cte4 as (select cast(exclusions as integer) from cte3 order by count desc limit 1)
+    select topping_name from pizza_runner.pizza_toppings as p
+    join cte4 as c on p.topping_id = c.exclusions;
