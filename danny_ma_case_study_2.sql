@@ -99,6 +99,21 @@ avg(pickup_time-order_time)
 from temp
 group by runner_id
 
+--Question 4
+with cte as (
+  select order_id, runner_id,
+  cast((case when distance = '' or distance = 'null' then null
+  	when distance like '%km' then trim('km' from distance)
+  	else distance
+  end) as  decimal) as distance
+  from pizza_runner.runner_orders
+  )
+  select c.customer_id, round(avg(t.distance),1) as avg_distance
+  from pizza_runner.customer_orders as c
+  join cte as t on c.order_id = t.order_id
+  group by c.customer_id
+  
+
 C
 --Question 1 Query
 with cte as (select distinct c.pizza_id,p.pizza_name, r.toppings from 
