@@ -113,6 +113,20 @@ with cte as (
   join cte as t on c.order_id = t.order_id
   group by c.customer_id
   
+  --Question 5
+  with cte as (
+  select order_id, runner_id,
+  cast((case when duration = '' or duration = 'null' then null
+  	when duration like '%minutes' then trim(' minutes' from duration)
+    when duration like '%mins' then trim(' mins' from duration)
+    when duration like '% minute' then trim(' minute' from duration)
+  	else duration
+  end) as integer) as duration
+  from pizza_runner.runner_orders
+  )
+  select (max(duration)-min(duration)) as diff_minutes from cte
+  
+  
 
 C
 --Question 1 Query
