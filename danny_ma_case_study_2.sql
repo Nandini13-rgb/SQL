@@ -126,6 +126,26 @@ with cte as (
   )
   select (max(duration)-min(duration)) as diff_minutes from cte
   
+  --Question 6
+  with cte as (
+  select order_id, runner_id,
+  cast((case when duration = '' or duration = 'null' then null
+  	when duration like '%minutes' then trim(' minutes' from duration)
+    when duration like '%mins' then trim(' mins' from duration)
+    when duration like '% minute' then trim(' minute' from duration)
+  	else duration
+  end) as integer) as duration,
+  cast((case when distance = '' or distance = 'null' then null
+  	when distance like '%km' then trim('km' from distance)
+  	else distance
+  end) as  decimal) as distance
+  from pizza_runner.runner_orders
+  )
+  select runner_id, order_id, (distance * 60/duration) as speed from cte
+  where distance is not null
+  group by runner_id, order_id, distance, duration
+  order by runner_id
+  
   
 
 C
