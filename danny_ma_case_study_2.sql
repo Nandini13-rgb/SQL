@@ -77,7 +77,27 @@ select order_id, runner_id, cast(pickup_time as timestamp), cast(distance as num
 )
 select max(duration)-min(duration) as difference from cte2
 
-
+B
+--Question 2 Query
+with cte as (
+  select runner_id, order_id,
+  cast((case when pickup_time = '' or pickup_time = 'null' then null
+  else pickup_time
+  end ) as timestamp)
+FROM pizza_runner.runner_orders),
+temp as (
+SELECT
+    c.runner_id,
+    c.pickup_time,
+    c.order_id,
+    co.order_time
+    from pizza_runner.customer_orders as co
+    join cte as c on c.order_id = co.order_id
+)
+select runner_id,
+avg(pickup_time-order_time)
+from temp
+group by runner_id
 
 C
 --Question 1 Query
