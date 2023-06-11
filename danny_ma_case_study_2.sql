@@ -147,6 +147,26 @@ with cte as (
   order by runner_id
   
   
+  --Question 7
+  with cte as (
+  select order_id, runner_id,
+  cast((case when distance = '' or distance = 'null' then null
+  	when distance like '%km' then trim('km' from distance)
+  	else distance
+  end) as  decimal) as distance
+  from pizza_runner.runner_orders
+  ),
+  cte2 as (
+  select runner_id, sum(case when distance is not null then 1
+                        else 0 end) as distance_sum,
+                        count(order_id) as total_orders
+                        from cte
+  group by runner_id)
+  select runner_id, (distance_sum*100/total_orders) as per
+  from cte2
+
+  
+  
 
 C
 --Question 1 Query
