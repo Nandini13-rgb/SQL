@@ -1,0 +1,2 @@
+--Question 8
+SELECT count(distinct customer_id) as pro_customers FROM foodie_fi.subscriptions where extract(year from start_date) = 2020 and plan_id = (select plan_id from foodie_fi.plans where plan_name = 'pro annual');
