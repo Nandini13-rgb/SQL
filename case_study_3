@@ -84,6 +84,21 @@ cte3 as(
   where cutoff_date > (start_date + interval '1 month')
   and plan_name <> 'pro annual'
 )
-select * from cte3
-order by customer_id, start_date
-  
+cte4 AS (
+ SELECT *, 
+   LAG(plan_id, 1) OVER(PARTITION BY customer_id ORDER BY start_date) 
+    AS last_payment_plan,
+   LAG(amount, 1) OVER(PARTITION BY customer_id ORDER BY start_date) 
+    AS last_amount_paid,
+   RANK() OVER(PARTITION BY customer_id ORDER BY start_date) AS payment_order
+ FROM cte3
+ ORDER BY customer_id, start_date
+)
+SELECT customer_id, plan_id, plan_name, start_date AS payment_date, 
+ (CASE 
+   WHEN plan_id IN (2, 3) AND last_payment_plan = 1 
+    THEN amount — last_amount_paid
+   ELSE amount
+ END) AS amount, payment_order
+FROM cte4;
+
