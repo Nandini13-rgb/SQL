@@ -1,2 +1,89 @@
 --Question 8
-SELECT count(distinct customer_id) as pro_customers FROM foodie_fi.subscriptions where extract(year from start_date) = 2020 and plan_id = (select plan_id from foodie_fi.plans where plan_name = 'pro annual');
+SELECT count(distinct customer_id) as pro_customers 
+FROM foodie_fi.subscriptions 
+where extract(year from start_date) = 2020 and plan_id = (select plan_id from foodie_fi.plans where plan_name = 'pro annual');
+
+
+--Question 9
+with cte as (
+SELECT customer_id, start_date as convert_date 
+FROM foodie_fi.subscriptions 
+where plan_id in (select plan_id from foodie_fi.plans where plan_name = 'pro annual')),
+temp as (
+  select c.customer_id, s.start_date, c.convert_date
+  from cte as c
+  left join foodie_fi.subscriptions as s
+  on c.customer_id = s.customer_id
+  )
+
+select round(avg(convert_date-start_date)) from temp
+where convert_date -start_date <> 0;
+
+select round(avg(s.start_date - c.start_date))
+  from foodie_fi.subscriptions as c
+  left join foodie_fi.subscriptions as s
+  on c.customer_id = s.customer_id
+   and s.plan_id = c.plan_id + 3
+   and s.plan_id = 3
+  
+  
+  
+  
+  --Question 10
+  WITH duration_table AS (
+  SELECT s2.start_date - s1.start_date AS duration,
+  WIDTH_BUCKET(s2.start_date - s1.start_date, 1, 360, 12) AS bin
+  FROM foodie_fi.subscriptions s1
+  JOIN foodie_fi.subscriptions s2
+  ON s1.customer_id = s2.customer_id
+   AND s1.plan_id +  3 = s2.plan_id
+  WHERE s2.plan_id = 3
+  ORDER BY duration 
+ )
+ SELECT CONCAT((bin-1)*30+1,' - ',bin*30,' days') AS breakdown, 
+  ROUND(AVG(duration)) AS avg_in_days,
+  COUNT(bin) AS customers
+ FROM duration_table
+ GROUP BY bin;
+ 
+ 
+ --Question 11
+ WITH downgrade_table AS (
+  SELECT distinct s1.customer_id
+  FROM foodie_fi.subscriptions s1
+  JOIN foodie_fi.subscriptions s2
+  ON s1.customer_id = s2.customer_id
+   AND s1.plan_id - 1  = s2.plan_id 
+  WHERE s2.plan_id = 1 and s2.start_date > s1.start_date and extract(year from s2.start_date) = 2020
+ )
+  select count(*) from downgrade_table
+  
+  
+  
+  
+  
+  --Section C
+  with recursive cte as(
+  select s.customer_id, s.plan_id, p.plan_name, s.start_date,
+price as amount,
+lead(start_date)over(partition by s.customer_id order by s.start_date, s.plan_id) as cutoff_date
+from foodie_fi.subscriptions as s join
+foodie_fi.plans as p on
+s.plan_id = p.plan_id
+where extract(year from start_date) = 2020 and s.plan_id not in (0,4)),
+cte2 as (select customer_id,plan_id,plan_name,start_date,amount,
+         coalesce(cutoff_date, '2020-12-31') as cutoff_date
+         from cte),
+cte3 as(
+  select customer_id, plan_id, plan_name,start_date,amount,cutoff_date
+  from cte2
+  union 
+  select customer_id, plan_id, plan_name,
+  date(start_date + interval '1 month') as start_date, amount,cutoff_date
+  from cte3
+  where cutoff_date > (start_date + interval '1 month')
+  and plan_name <> 'pro annual'
+)
+select * from cte3
+order by customer_id, start_date
+  
