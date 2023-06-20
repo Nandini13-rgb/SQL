@@ -42,7 +42,8 @@ group by txn_type
 
 
 --question 2
-select customer_id, count(txn_type), sum(txn_amount) as total_amount
+select customer_id, count(txn_type) as deposit_counts, sum(txn_amount) as total_amount
 from data_bank.customer_transactions 
 where txn_type = 'deposit'
 group by customer_id
+
