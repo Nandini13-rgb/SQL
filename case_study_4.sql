@@ -41,9 +41,82 @@ from data_bank.customer_transactions
 group by txn_type
 
 
+  
+
 --question 2
 select customer_id, count(txn_type) as deposit_counts, sum(txn_amount) as total_amount
 from data_bank.customer_transactions 
 where txn_type = 'deposit'
 group by customer_id
 
+
+
+Section C
+with net_transactions as (SELECT customer_id,
+txn_type,
+txn_date,
+sum(case when txn_type = 'deposit' then txn_amount
+    else -txn_amount
+    end) as net_transactions
+    FROM data_bank.customer_transactions
+    group by customer_id, txn_type, txn_date
+    order by customer_id, txn_date
+    ),
+    running_balance as(
+      select customer_id,
+      txn_type,
+      txn_date,
+      net_transactions,
+      sum(net_transactions)over(partition by customer_id order by txn_date) as running_balance
+          from net_transactions
+      order by customer_id, txn_date
+)
+      select * from running_balance;
+
+
+
+--customer balance at the end of each month
+with net_transactions as (SELECT customer_id,
+extract(month from txn_date) as txn_month,
+sum(case when txn_type = 'deposit' then txn_amount
+    else -txn_amount
+    end) as net_transactions
+    FROM data_bank.customer_transactions
+    group by customer_id, txn_month
+    order by customer_id, txn_month
+    ),
+    month_end_balance as(
+      select customer_id,
+      txn_month
+      net_transactions,
+      sum(net_transactions)over(partition by customer_id, txn_month order by txn_month) as month_end_balance
+          from net_transactions
+      order by customer_id, txn_month
+)
+      select * from month_end_balance;
+
+--minimum, average and maximum values of the running balance for each customer
+with net_transactions as (SELECT customer_id,
+txn_type,
+txn_date,
+sum(case when txn_type = 'deposit' then txn_amount
+    else -txn_amount
+    end) as net_transactions
+    FROM data_bank.customer_transactions
+    group by customer_id, txn_type, txn_date
+    order by customer_id, txn_date
+    ),
+    running_balance as(
+      select customer_id,
+      txn_type,
+      txn_date,
+      net_transactions,
+      sum(net_transactions)over(partition by customer_id order by txn_date) as running_balance
+          from net_transactions
+      order by customer_id, txn_date
+)
+      select customer_id, min(running_balance) as min_balance,
+      max(running_balance) as max_balance,
+      round(avg(running_balance)) as avg_balance
+      from running_balance
+      group by customer_id;
