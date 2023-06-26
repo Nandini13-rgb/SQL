@@ -120,3 +120,26 @@ sum(case when txn_type = 'deposit' then txn_amount
       round(avg(running_balance)) as avg_balance
       from running_balance
       group by customer_id;
+
+
+--option 1
+with net_transactions as (SELECT customer_id,
+extract(month from txn_date) as txn_month,
+sum(case when txn_type = 'deposit' then txn_amount
+    else -txn_amount
+    end) as net_transactions
+    FROM data_bank.customer_transactions
+    group by customer_id, txn_month
+    order by customer_id, txn_month
+    ),
+    month_end_balance as(
+      select customer_id,
+      txn_month,
+      net_transactions,
+      sum(net_transactions)over(partition by customer_id, txn_month order by txn_month) as month_end_balance
+          from net_transactions
+      order by customer_id, txn_month
+)
+      select txn_month, sum(month_end_balance) as data from month_end_balance
+      group by txn_month
+      order by txn_month;
