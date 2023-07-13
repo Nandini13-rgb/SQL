@@ -223,12 +223,27 @@ sum(
 sum(
   case when e.event_type = 5 then 1
   else 0
-  end) as click
--- count(case when e.event_type = 3 then 1
--- else 0
--- end )as purchase_flag
+  end) as click,
+count(case when e.event_type = 3 then 1
+else null
+end )as purchase_flag
 FROM clique_bait.events e
 join clique_bait.users u using(cookie_id)
 group by e.visit_id, u.user_id
-order by 2)
-select * from cte
+order by 2),
+temp as (
+select c.visit_id,
+c.user_id,
+c.visit_start_time,
+c.page_views,
+c.cart_adds,
+c.impressions,
+c.click,
+case when c.purchase_flag >= 1 then true
+else false
+end as purchase,
+ci.campaign_name
+from cte as c join clique_bait.campaign_identifier as ci on c.visit_start_time between ci.start_date and ci.end_date)
+select campaign_name, count(purchase) from temp 
+where purchase = 'true'
+group by campaign_name;
