@@ -205,3 +205,30 @@ select
        avg(round((100*total_purchased)/(added_to_cart*1.0), 2)) as avg_cart_to_purchase_ratio
         from product_category_details)
 select * from cte
+
+
+
+-- Section 3 Campaign Analysis
+with cte as(SELECT distinct e.visit_id, u.user_id,
+min(e.event_time) as visit_start_time,
+count(e.page_id) as page_views,
+sum(
+  case when e.event_type = 2 and e.visit_id not in (select visit_id from clique_bait.events where event_type = 3)then 1
+  else 0
+  end) as cart_adds,
+sum(
+  case when e.event_type = 4 then 1
+  else 0
+  end) as impressions,
+sum(
+  case when e.event_type = 5 then 1
+  else 0
+  end) as click
+-- count(case when e.event_type = 3 then 1
+-- else 0
+-- end )as purchase_flag
+FROM clique_bait.events e
+join clique_bait.users u using(cookie_id)
+group by e.visit_id, u.user_id
+order by 2)
+select * from cte
