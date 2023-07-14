@@ -167,3 +167,20 @@ FROM balanced_tree.sales s join balanced_tree.product_details as d
 group by 1)
 select category_name, round(100.00*total_revenue/(select sum(total_revenue) from category_split),2) as percentage_split
 from category_split;
+
+--What is the total transaction “penetration” for each product? 
+with penetration as(
+  SELECT
+  s.prod_id,
+  d.product_name,
+  count(distinct s.txn_id)*100.0/(select count(distinct txn_id) from balanced_tree.sales) as penetration
+ 
+FROM balanced_tree.sales s
+  join balanced_tree.product_details d 
+  on s.prod_id = d.product_id
+ where s.qty >= 1
+group by 1,2
+)
+select * from penetration
+
+--What is the most common combination of at least 1 quantity of any 3 products in a 1 single transaction?
