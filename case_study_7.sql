@@ -191,3 +191,39 @@ JOIN balanced_tree.sales  s2 ON s2.txn_id = s.txn_id AND s.prod_id < s2.prod_id
 JOIN balanced_tree.sales  s3 ON s3.txn_id = s.txn_id AND s2.prod_id < s3.prod_id
 GROUP BY s.prod_id, s2.prod_id, s3.prod_id
 ORDER BY Combinations DESC
+
+
+--Reporting Challenge
+with cte as (SELECT pd.category_id, 
+pd.category_name AS Category, 
+pd.product_id, 
+pd.product_name AS Product, 
+RANK() OVER(PARTITION BY pd.segment_id ORDER BY SUM(sls.qty)) AS Ranked_Products, 
+pd.segment_id, 
+pd.segment_name AS Segment, 
+sls.txn_id AS Transactions, 
+sls.member, 
+ROUND(100.0 * COUNT(sls.member)/(SELECT COUNT(member) FROM balanced_tree.sales),2) AS Member_Percentage, 
+COUNT(DISTINCT sls.txn_id) AS Number_of_Transactions, 
+SUM(qty) AS Total_quantity_products, 
+SUM(sls.qty * sls.price) AS Total_Revenue_before_discounts, ROUND(SUM(sls.qty * sls.price * (discount/100)), 2) AS Total_Discount,
+  extract(month from start_txn_time) AS Month, 
+ extract(year from start_txn_time) AS Year
+  FROM balanced_tree.sales sls
+  INNER JOIN balanced_tree.product_details AS pd ON  sls.prod_id = pd.product_id
+  WHERE extract(month from start_txn_time) = 1 AND extract(year from start_txn_time) = '2021'
+  GROUP BY extract(year from start_txn_time), extract(year from start_txn_time), txn_id, member, pd.product_id, pd.product_name, pd.segment_id, pd.segment_name, pd.category_id, pd.category_name,sls.start_txn_time),
+  temp as (
+    SELECT *, 
+    ROUND(AVG(Total_quantity_products), 2) AS avg_unique_products, 
+    ROUND(AVG(Total_Revenue_before_discounts), 2) AS Average_Revenue, 
+    ROUND(AVG(Total_Discount), 2) AS Average_Discount,
+  PERCENTILE_DISC(0.25) WITHIN GROUP(ORDER BY Total_Revenue_before_discounts)  AS percentile_25,
+  PERCENTILE_DISC(0.50) WITHIN GROUP(ORDER BY Total_Revenue_before_discounts)  AS percentile_50,
+  PERCENTILE_DISC(0.75) WITHIN GROUP(ORDER BY Total_Revenue_before_discounts)  AS percentile_75
+    from cte
+    GROUP BY Number_of_Transactions, Total_Discount, Total_quantity_products, Total_Revenue_before_discounts, Month, Year, Transactions, member, Member_Percentage, product_id, Product, segment_id, Segment, Ranked_Products, Category, category_id
+)
+
+    select * from cte
+  
