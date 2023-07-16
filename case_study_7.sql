@@ -227,3 +227,62 @@ SUM(sls.qty * sls.price) AS Total_Revenue_before_discounts, ROUND(SUM(sls.qty * 
 
     select * from cte
   
+--bonus question
+with cte as(
+select id, parent_id,
+level_text,
+level_name
+from balanced_tree.product_hierarchy
+where id >= 7),
+temp as (
+  select c.id, p.parent_id, c.level_text as c_level_text,
+  c.level_name as c_level_name,
+  p.level_text as p_level_text,
+  p.level_name as p_level_name
+  from cte as c 
+  join balanced_tree.product_hierarchy as p
+  on c.parent_id = p.id),
+  final as(
+    select t.id,
+    t.parent_id,
+    t.c_level_text,
+    t.c_level_name,
+    t.p_level_text,
+    t.p_level_name,
+    p.level_text,
+    p.level_name
+    from temp as t
+    join balanced_tree.product_hierarchy as p
+  on t.parent_id = p.id),
+  final2 as (select id,
+             concat(c_level_text, ' ', p_level_text, ' ', level_text) as product_name,
+             case when c_level_name = 'Style'
+             then id
+             end as style_id,
+             c_level_text as style_name,
+             case when p_level_text = 'Jeans' then 3
+             when p_level_text = 'Jacket' then 4
+             when p_level_text = 'Shirt' then 5
+             when p_level_text  = 'Socks' then 6
+             end as segment_id,
+            p_level_text as segment_name,
+            case when level_text = 'Womens' then 1
+            when level_text = 'Mens' then 2
+            end as category_id,
+            level_text as category_name
+            from final),
+ final3 as (
+   select p.product_id,
+   p.price,
+   f.product_name,
+   f.category_id,
+   f.segment_id,
+   f.style_id,
+   f.category_name,
+   f.segment_name,
+   f.style_name
+   from final2 f
+   join balanced_tree.product_prices p
+   on f.id = p.id)
+  
+  select * from final3
