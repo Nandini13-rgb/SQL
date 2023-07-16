@@ -184,3 +184,10 @@ group by 1,2
 select * from penetration
 
 --What is the most common combination of at least 1 quantity of any 3 products in a 1 single transaction?
+
+SELECT TOP 1 s.prod_id, s2.prod_id, s3.prod_id, COUNT(*) AS [Combinations]
+FROM balanced_tree.sales s 
+JOIN balanced_tree.sales  s2 ON s2.txn_id = s.txn_id AND s.prod_id < s2.prod_id
+JOIN balanced_tree.sales  s3 ON s3.txn_id = s.txn_id AND s2.prod_id < s3.prod_id
+GROUP BY s.prod_id, s2.prod_id, s3.prod_id
+ORDER BY Combinations DESC
