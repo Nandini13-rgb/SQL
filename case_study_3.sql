@@ -1,3 +1,51 @@
+--Section B
+--Question 1
+SELECT count(distinct customer_id) as total_customers FROM foodie_fi.subscriptions;
+
+--Question 2
+SELECT 
+-- extract(month from start_date) as month,
+to_char(start_date, 'Month') as months,
+count(plan_id)
+FROM foodie_fi.subscriptions 
+where plan_id = 0
+group by to_char(start_date, 'Month')
+order by 1
+
+
+--Question 3
+  SELECT 
+s.plan_id,
+plan_name,
+count(plan_id) as events
+FROM foodie_fi.subscriptions s
+join foodie_fi.plans using(plan_id)
+where extract(year from start_date) > 2020
+group by 1, 2
+order by 1
+
+
+--Question 4
+SELECT 
+count(distinct customer_id) as total_customers,
+concat(round(100*count(distinct customer_id)::decimal/(select count(distinct customer_id) from foodie_fi.subscriptions),2), '%') as percentage
+FROM foodie_fi.subscriptions s
+join foodie_fi.plans using(plan_id)
+where plan_name = 'churn'
+
+--Question 5
+  with plan as (SELECT 
+customer_id,
+plan_id,
+row_number()over(partition by customer_id order by plan_id)
+from foodie_fi.subscriptions)
+select count(distinct customer_id) as total_customers,
+round(100*count(distinct customer_id)::decimal/(select count(distinct customer_id) from foodie_fi.subscriptions),2) as percentage
+from plan
+where plan_id = 4 and row_number = 2
+
+
+  
 --Question 8
 SELECT count(distinct customer_id) as pro_customers 
 FROM foodie_fi.subscriptions 
