@@ -525,14 +525,18 @@ join pizza_runner.runner_orders as p on c.order_id = p.order_id
 join pizza_runner.ratings as r on c.order_id = r.order_id),
  sucessful_deliveries as (select *,
   extract(minutes from pickup_time - order_time) as time_btw_order_pickup,
-  round(60.0*distance/duration, 2) as speed
-  from cleaning
-  where pickup_time is not null),
- revenue as (select *,
- (distance * 0.3) as delivery_fees,
+  round(60.0*distance/duration, 2) as speed,
  case when pizza_id = 1 then 12
       else 10
       end as cost
+  from cleaning
+  where pickup_time is not null),
+  
+  
+ revenue as (select 
+ sum(distance) * 0.3 as delivery_fees,
+ sum(cost) as total_cost
  from  sucessful_deliveries)
- select concat(sum(cost) - sum(delivery_fees), ' $') as revenue from revenue
+ select concat(total_cost - delivery_fees, ' $') as revenue from revenue
+ 
  
