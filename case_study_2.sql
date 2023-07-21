@@ -332,3 +332,207 @@ from pizza_runner.customer_orders),
     cte4 as (select cast(exclusions as integer) from cte3 order by count desc limit 1)
     select topping_name from pizza_runner.pizza_toppings as p
     join cte4 as c on p.topping_id = c.exclusions;
+
+
+--Question 4
+with cleaning as (SELECT
+	order_id,
+    customer_id,
+    pizza_id,
+    case when exclusions = '' or exclusions = 'null' then null
+  		else exclusions
+  		end as exclusions,
+    case when extras = '' or extras = 'null' then null
+  		else extras
+  		end as extras,
+    order_time
+    from pizza_runner.customer_orders),
+meatlovers as (
+  select *, 
+  case when pizza_id = 1 and extras is null and exclusions is null 
+  	then 'Meat Lovers'
+  when pizza_id = 1 and extras = '1' and exclusions is null 
+  	then 'Meat Lovers - Extra Bacon'
+  when pizza_id = 1 and extras is null and exclusions = '3' 
+  	then 'Meat Lovers - Exclude Beaf'
+  when pizza_id = 1 and extras is null and exclusions = '4' 
+  	then 'Meat Lovers - Exclude Cheese'
+  when pizza_id = 1 and extras in ('6,9') and exclusions  in ('4,1')
+  	then 'Meat Lovers - Exclude Cheese, Bacon - Extra Mushroom, Peppers'
+  when pizza_id = 1 and extras = '1,4' and exclusions  = '2,6'
+  	then 'Meat Lovers - Exclude BBQ Sauce, Mushrooms - Extra Bacon, Cheese'
+  when pizza_id = 1 and extras in ('1,5') and exclusions = '4'
+  	then 'Meat Lovers - Exclude Cheese - Extra Bacon, Chicken'
+    end as order_item
+  from cleaning)
+select * from meatlovers
+
+
+
+--Section D
+--Question 1
+with cleaning as (SELECT
+	order_id,
+    customer_id,
+    pizza_id,
+    case when exclusions = '' or exclusions = 'null' then null
+  		else exclusions
+  		end as exclusions,
+    case when extras = '' or extras = 'null' then null
+  		else extras
+  		end as extras,
+    order_time
+    from pizza_runner.customer_orders),
+costs as (
+  select pizza_id,
+  case when pizza_id = 1
+  then 12
+  else 10
+  end as cost
+  from cleaning)
+select concat(sum(cost), ' $') as total_cost from costs
+
+-Question 2
+with cleaning as (SELECT
+	order_id,
+    customer_id,
+    pizza_id,
+    case when exclusions = '' or exclusions = 'null' then null
+  		else exclusions
+  		end as exclusions,
+    case when extras = '' or extras = 'null' then null
+  		else extras
+  		end as extras,
+    order_time
+    from pizza_runner.customer_orders),
+costs as (
+  select pizza_id,
+  case when pizza_id = 1
+  then 12
+  else 10
+  end as cost,
+  case when extras is not null
+  then 1
+  when extras = '4' or extras like '%4'
+  then 2
+  else 0
+  end as additional_charge
+  from cleaning),
+total_cost as(
+select *, cost+additional_charge as total_cost from costs)
+select concat(sum(total_cost) , ' $') as total_cost  from total_cost
+
+
+--Question 3 and 4
+drop table if exists pizza_runner.ratings ;
+
+CREATE TABLE pizza_runner.ratings
+("order_id" INT,
+"rating_value" INT);
+
+insert into pizza_runner.ratings(
+"order_id", "rating_value"
+)
+VALUES
+(1,3),
+(2,4),
+(3,5),
+(4,1),
+(5,1),
+(6,3),
+(7,4),
+(8,3),
+(9,2),
+(10,5);
+
+with cleaning as(
+  select c.customer_id,
+  c.order_id,
+p.runner_id,
+r.rating_value,
+c.order_time,
+cast((case when p.pickup_time = 'null' then null
+  	else p.pickup_time
+  	end) as timestamp),
+cast((case when p.duration = '' or p.duration = 'null' then null
+  	when p.duration like '%minutes' then trim(' minutes' from duration)
+    when p.duration like '%mins' then trim(' mins' from duration)
+    when p.duration like '% minute' then trim(' minute' from duration)
+  	else p.duration
+  end) as integer) as duration,
+  cast((case when distance = 'null' then null
+  	when distance like '%km' then trim('km' from distance)
+  	else distance
+  	end ) as numeric) as distance
+from pizza_runner.customer_orders as c
+join pizza_runner.runner_orders as p on c.order_id = p.order_id
+join pizza_runner.ratings as r on c.order_id = r.order_id),
+ sucessful_deliveries as (select *,
+  extract(minutes from pickup_time - order_time) as time_btw_order_pickup,
+  round(60.0*distance/duration, 2) as speed
+  from cleaning
+  where pickup_time is not null)
+ select *,
+ round(avg(speed),2) as avg_speed,
+ count(order_id) as total_speed
+ from  sucessful_deliveries
+ group by runner_id, customer_id, order_id, rating_value, order_time, pickup_time, duration, distance, time_btw_order_pickup,speed
+
+--Question 5
+drop table if exists pizza_runner.ratings ;
+
+CREATE TABLE pizza_runner.ratings
+("order_id" INT,
+"rating_value" INT);
+
+insert into pizza_runner.ratings(
+"order_id", "rating_value"
+)
+VALUES
+(1,3),
+(2,4),
+(3,5),
+(4,1),
+(5,1),
+(6,3),
+(7,4),
+(8,3),
+(9,2),
+(10,5);
+
+with cleaning as(
+  select c.customer_id,
+  c.order_id,
+  c.pizza_id,
+p.runner_id,
+r.rating_value,
+c.order_time,
+cast((case when p.pickup_time = 'null' then null
+  	else p.pickup_time
+  	end) as timestamp),
+cast((case when p.duration = '' or p.duration = 'null' then null
+  	when p.duration like '%minutes' then trim(' minutes' from duration)
+    when p.duration like '%mins' then trim(' mins' from duration)
+    when p.duration like '% minute' then trim(' minute' from duration)
+  	else p.duration
+  end) as integer) as duration,
+  cast((case when distance = 'null' then null
+  	when distance like '%km' then trim('km' from distance)
+  	else distance
+  	end ) as numeric) as distance
+from pizza_runner.customer_orders as c
+join pizza_runner.runner_orders as p on c.order_id = p.order_id
+join pizza_runner.ratings as r on c.order_id = r.order_id),
+ sucessful_deliveries as (select *,
+  extract(minutes from pickup_time - order_time) as time_btw_order_pickup,
+  round(60.0*distance/duration, 2) as speed
+  from cleaning
+  where pickup_time is not null),
+ revenue as (select *,
+ (distance * 0.3) as delivery_fees,
+ case when pizza_id = 1 then 12
+      else 10
+      end as cost
+ from  sucessful_deliveries)
+ select concat(sum(cost) - sum(delivery_fees), ' $') as revenue from revenue
+ 
