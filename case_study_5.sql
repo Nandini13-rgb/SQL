@@ -30,7 +30,9 @@ temp as (select week_date,
          round(sales/transactions,2) as avg_transactions,
          sales
 from cte)
---1 
+
+  -- Data Exploration
+  --1 
 select distinct(extract(dow from week_date)) from temp;
 --2
 select distinct(week_number)from temp
