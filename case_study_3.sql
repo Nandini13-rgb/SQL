@@ -45,6 +45,19 @@ from plan
 where plan_id = 4 and row_number = 2
 
 
+  --Question 6
+  with cte as (
+  select customer_id,
+plan_id,
+lead(plan_id,1)over(partition by customer_id order by plan_id) as next_plan
+from foodie_fi.subscriptions
+)
+select next_plan, count(distinct customer_id) as conversion,
+round(100*count(distinct customer_id)::numeric/(select count(distinct customer_id) from foodie_fi.subscriptions),2)
+from cte 
+where plan_id = 0 and next_plan is not null
+group by 1
+order by 1
   
 --Question 8
 SELECT count(distinct customer_id) as pro_customers 
