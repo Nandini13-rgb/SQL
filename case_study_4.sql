@@ -49,7 +49,71 @@ from data_bank.customer_transactions
 where txn_type = 'deposit'
 group by customer_id
 
+--question 3 For each month - how many Data Bank customers make more than 1 deposit and either 1 purchase or 1 withdrawal in a single month?
 
+with counts as (SELECT customer_id,
+extract(month from txn_date) as month,
+sum(case
+    when txn_type = 'deposit' then 1
+    else 0
+    end) as deposit_count,
+sum(case when txn_type = 'purchase' then 1
+    else 0
+    end) as purchase_count,
+ sum(case when txn_type = 'withdraw' then 1
+    else 0
+    end) as withdraw_count   
+FROM data_bank.customer_transactions
+group by 1,2)
+
+select month, count(customer_id) as total_customers
+from counts
+where deposit_count > 1 and (purchase_count = 1 or withdraw_count = 1)
+group by 1
+order by 1
+
+--question 4
+  with counts as (SELECT customer_id,
+extract(month from txn_date) as month,
+sum(case
+    when txn_type = 'deposit' then txn_amount   
+    else -txn_amount
+    end) as balance
+FROM data_bank.customer_transactions
+group by 1,2)
+
+select customer_id, month, sum(balance) as total_balance
+from counts
+group by 1, 2
+order by 1
+
+
+  --question 5
+  with counts as (SELECT customer_id,
+extract(month from txn_date) as month,
+sum(case
+    when txn_type = 'deposit' then txn_amount   
+    else -txn_amount
+    end) as balance
+FROM data_bank.customer_transactions
+group by 1,2),
+
+closing_balance as (select customer_id, month, sum(balance) as total_balance
+from counts
+group by 1, 2
+order by 1, 2),
+
+cte as (select customer_id, total_balance, lag(total_balance,1)over(partition by customer_id order by month) as prev_balance,
+(lag(total_balance,1)over(partition by customer_id order by month))-total_balance as diff
+from closing_balance),
+
+temp as(
+
+select customer_id, 100*diff/prev_balance as per_balance
+from cte)
+
+select round(100*count(customer_id)::decimal/(select count(customer_id) from data_bank.customer_transactions),2) as total_customers
+from temp where per_balance > 5
 
 Section C
 with net_transactions as (SELECT customer_id,
