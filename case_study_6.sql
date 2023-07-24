@@ -4,6 +4,19 @@
 select count(distinct user_id) as total_users 
 from clique_bait.users
 
+  --question 2
+  with cte as(SELECT user_id,
+count(cookie_id) as cookies
+FROM clique_bait.users 
+group by 1
+order by 1)
+select user_id,
+round(avg(cookies),2) as avg_cookies
+from 
+cte
+group by 1
+order by 1
+;
   --question 3
   select u.user_id,
 extract(month from u.start_date) as month,
@@ -59,7 +72,38 @@ on e.page_id = p.page_id
 group by 1
 
 --question 9
-all the evnt_type of purchase have null in product_category
+with purchase as(
+  select visit_id,
+event_type
+from clique_bait.events
+where event_type = 3),
+
+cart_add as(
+	select e.page_id,
+p.product_id,
+e.visit_id
+from clique_bait.events e
+join clique_bait.page_hierarchy p
+using(page_id)
+where event_type = 2),
+
+total_purchase as (
+	select 
+c.product_id,
+count(p.visit_id) as total_products
+from purchase p
+join cart_add c
+on p.visit_id=c.visit_id
+group by 1)
+
+select 
+product_id,
+total_products
+from total_purchase 
+order by 2 desc
+limit 3;
+
+
 
 
 
